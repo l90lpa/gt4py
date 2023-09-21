@@ -587,7 +587,7 @@ class StencilObject(abc.ABC):
             domain, origin = type(self)._domain_origin_cache[cache_key]
 
         permuted_arrays = _extract_stencil_arrays(array_infos)
-        self.run(
+        results = self.run(
             _domain_=domain,
             _origin_=origin,
             exec_info=exec_info,
@@ -597,6 +597,8 @@ class StencilObject(abc.ABC):
 
         if exec_info is not None:
             exec_info["call_run_end_time"] = time.perf_counter()
+
+        return results
 
     def freeze(
         self: "StencilObject", *, origin: Dict[str, Tuple[int, ...]], domain: Tuple[int, ...]

@@ -90,7 +90,8 @@ ORIGIN_CORRECTED_VIEW_CLASS = textwrap.dedent(
             )
 
             shape = [field.shape[i] if i is not None else 1 for i in self.idx_to_data]
-            self.field_view = np.reshape(field.data, shape).view(np.ndarray)
+            # self.field_view = np.reshape(field.data, shape).view(np.ndarray)
+            self.field_view = field
 
             self.offsets = offsets
 
@@ -138,7 +139,8 @@ ORIGIN_CORRECTED_VIEW_CLASS = textwrap.dedent(
             return self.field_view.__getitem__(self.shim_key(key))
 
         def __setitem__(self, key, value):
-            return self.field_view.__setitem__(self.shim_key(key), value)
+            # return self.field_view.__setitem__(self.shim_key(key), value)
+            self.field_view = self.field_view.at[self.shim_key(key)].set(value)
     """
 )
 
@@ -373,10 +375,12 @@ class NpirCodegen(codegen.TemplatedGenerator, eve.VisitorWithSymbolTableTrait):
         self, node: npir.Computation, *, ignore_np_errstate: bool = True, **kwargs: Any
     ) -> Union[str, Collection[str]]:
         signature = ["*", *node.arguments, "_domain_", "_origin_"]
+        field_names = map(lambda decl: f"{decl.name}.field_view", node.api_field_decls)
         return self.generic_visit(
             node,
             signature=", ".join(signature),
             data_view_class=ORIGIN_CORRECTED_VIEW_CLASS,
+            fields_to_return=", ".join(field_names),
             ignore_np_errstate=ignore_np_errstate,
             **kwargs,
         )
@@ -387,7 +391,7 @@ class NpirCodegen(codegen.TemplatedGenerator, eve.VisitorWithSymbolTableTrait):
             import numbers
             from typing import Tuple
 
-            import numpy as np
+            import jax.numpy as np
             from gt4py.cartesian.gtc import ufuncs
 
             {{ data_view_class }}
@@ -404,17 +408,13 @@ class NpirCodegen(codegen.TemplatedGenerator, eve.VisitorWithSymbolTableTrait):
                 {% for decl in temp_decls %}{{ decl | indent(4) }}
                 {% endfor %}
 
-                {% if ignore_np_errstate -%}
-                with np.errstate(divide='ignore', over='ignore', under='ignore', invalid='ignore'):
-                {%- else -%}
-                with np.errstate():
-                {%- endif %}
-
                 {% for pass in vertical_passes %}
-                {{ pass | indent(8) }}
+                {{ pass | indent(4) }}
                 {% else %}
-                    pass
+                pass
                 {% endfor %}
+                
+                return {{fields_to_return}}
             """
         )
     )

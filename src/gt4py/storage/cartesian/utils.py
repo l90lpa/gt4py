@@ -21,6 +21,7 @@ from typing import Any, Literal, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 import numpy.typing as npt
+import jax.numpy as jnp
 
 from gt4py._core import definitions as core_defs
 from gt4py.cartesian import config as gt_config
@@ -171,7 +172,8 @@ def asarray(
     if device == "cpu" or (
         not device and (hasattr(array, "__array_interface__") or hasattr(array, "__array__"))
     ):
-        return np.asarray(array)
+        # return np.asarray(array)
+        return jnp.asarray(array)
 
     if device:
         raise ValueError(f"Invalid device: {device!s}")

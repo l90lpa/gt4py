@@ -112,7 +112,7 @@ class {{ class_name }}({{ base_class }}):
 {{ pre_run }}
 {%- endfilter %}
 
-        self._call_run(
+        results = self._call_run(
             field_args=field_args,
             parameter_args=parameter_args,
             domain=domain,
@@ -163,6 +163,8 @@ class {{ class_name }}({{ base_class }}):
                         + stencil_info["run_cpp_time"]
                     )
 
+        return results
+
     def run(self, _domain_, _origin_, exec_info, *, {{- field_names|join(", ") -}}, {{- param_names|join(", ") -}}):
         if exec_info is not None:
             exec_info["domain"] = _domain_
@@ -173,3 +175,5 @@ class {{ class_name }}({{ base_class }}):
 {%- endfilter %}
         if exec_info is not None:
             exec_info["run_end_time"] = time.perf_counter()
+        
+        return results
